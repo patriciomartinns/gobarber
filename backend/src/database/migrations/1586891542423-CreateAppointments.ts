@@ -12,6 +12,7 @@ export default class CreateAppointments1586891542423
 						type: 'uuid',
 						isPrimary: true,
 						generationStrategy: 'uuid',
+						default: 'uuid_generate_v4()',
 					},
 					{
 						name: 'provider',
@@ -27,7 +28,7 @@ export default class CreateAppointments1586891542423
 						default: 'now()',
 					},
 					{
-						name: 'update_at',
+						name: 'updated_at',
 						type: 'timestamp',
 						default: 'now()',
 					},
