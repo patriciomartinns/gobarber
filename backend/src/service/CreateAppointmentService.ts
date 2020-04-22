@@ -1,6 +1,8 @@
 import { startOfHour } from 'date-fns';
 import { getCustomRepository } from 'typeorm';
 
+import AppError from '../errors/AppError';
+
 import Appointment from '../models/Appointments';
 import AppointmentsRepository from '../repositories/AppointmentsRepository';
 
@@ -21,7 +23,7 @@ class CreateAppointmentService {
 		);
 
 		if (findAppointmentInSameDate) {
-			throw Error('This appointment is aleady booked');
+			throw AppError('This appointment is aleady booked');
 		}
 
 		const appointment = appointmentsRepository.create({
