@@ -23,7 +23,7 @@ class CreateAppointmentService {
 		);
 
 		if (findAppointmentInSameDate) {
-			throw AppError('This appointment is aleady booked');
+			throw new AppError('This appointment is aleady booked');
 		}
 
 		const appointment = appointmentsRepository.create({
