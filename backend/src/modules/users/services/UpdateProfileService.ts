@@ -2,46 +2,73 @@ import { inject, injectable } from 'tsyringe';
 
 import AppError from '@shared/errors/AppError';
 import IUsersRepository from '@modules/users/repositories/IUsersRepository';
-import IStorageProvider from '@shared/container/providers/StorageProvider/models/IStorageProvider';
+import IHashProvider from '@modules/users/providers/HashProvider/models/IHashProvider';
+
 import User from '../infra/typeorm/entities/User';
 
 interface IRequest {
 	user_id: string;
-	avatarFilename: string;
+	name: string;
+	email: string;
+	password?: string;
+	old_password?: string;
 }
 
 @injectable()
-class UpdateUserAvatarService {
+class UpdateProfile {
 	constructor(
 		@inject('UsersRepository')
 		private usersRepository: IUsersRepository,
 
-		@inject('StorageProvider')
-		private storageProvider: IStorageProvider,
+		@inject('HashProvider')
+		private hashProvider: IHashProvider,
 	) {}
 
-	public async execute({ user_id, avatarFilename }: IRequest): Promise<User> {
+	public async execute({
+		user_id,
+		name,
+		email,
+		old_password,
+		password,
+	}: IRequest): Promise<User> {
 		const user = await this.usersRepository.findById(user_id);
 
 		if (!user) {
+			throw new AppError('User not found.');
+		}
+
+		const userWithUpdatedEmail = await this.usersRepository.findByEmail(
+			email,
+		);
+
+		if (userWithUpdatedEmail && userWithUpdatedEmail.id !== user_id) {
+			throw new AppError('Email already in use.');
+		}
+
+		user.name = name;
+		user.email = email;
+
+		if (password && !old_password) {
 			throw new AppError(
-				'Only authenticated users can change avatar',
-				401,
+				'You need to inform the old password to set a new password.',
 			);
 		}
 
-		if (user.avatar) {
-			await this.storageProvider.deleteFile(user.avatar);
+		if (password && old_password) {
+			const checkOldPassword = await this.hashProvider.compareHash(
+				old_password,
+				user.password,
+			);
+
+			if (!checkOldPassword) {
+				throw new AppError('Old password does not match.');
+			}
+
+			user.password = await this.hashProvider.generateHash(password);
 		}
 
-		const filename = await this.storageProvider.saveFile(avatarFilename);
-
-		user.avatar = filename;
-
-		await this.usersRepository.save(user);
-
-		return user;
+		return this.usersRepository.save(user);
 	}
 }
 
-export default UpdateUserAvatarService;
+export default UpdateProfile;
